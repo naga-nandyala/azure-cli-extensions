@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "G6CDo8EkuFA=",
+  "success": true,
+  "projectFilePath": "/Users/naganandyala/work/lrn_explore/packaging_related/macos_1/azure-cli-extensions/src/containerapp/azext_containerapp/tests/latest/data/source_built_using_bookworm_buildpack_net8/NetCore8PreviewMvcApp.csproj",
+  "expectedPackageFiles": [
+    "/Users/naganandyala/.nuget/packages/microsoft.netcore.app.ref/8.0.23/microsoft.netcore.app.ref.8.0.23.nupkg.sha512",
+    "/Users/naganandyala/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.23/microsoft.aspnetcore.app.ref.8.0.23.nupkg.sha512",
+    "/Users/naganandyala/.nuget/packages/microsoft.netcore.app.host.osx-arm64/8.0.23/microsoft.netcore.app.host.osx-arm64.8.0.23.nupkg.sha512"
+  ],
+  "logs": []
+}
