@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NetCore8PreviewMvcApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76bb58d04d3c008b16a457bb46e913f781839bb4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+11ea5f9ab35f3b5b82d7739d00d4ebae496938e0")]
 [assembly: System.Reflection.AssemblyProductAttribute("NetCore8PreviewMvcApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NetCore8PreviewMvcApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
