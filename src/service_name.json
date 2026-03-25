@@ -1,8 +1,8 @@
 [
   {
-    "Command":"az acat",
-    "AzureServiceName":"Azure App Compliance Automation Tool",
-    "URL":"https://learn.microsoft.com/en-us/microsoft-365-app-certification/docs/acat-overview"
+    "Command": "az acat",
+    "AzureServiceName": "Azure App Compliance Automation Tool",
+    "URL": "https://learn.microsoft.com/en-us/microsoft-365-app-certification/docs/acat-overview"
   },
   {
     "Command": "az account",
@@ -48,6 +48,11 @@
     "Command": "az apic",
     "AzureServiceName": "API Center",
     "URL": "https://learn.microsoft.com/en-us/azure/api-center"
+  },
+  {
+    "Command": "az appnet",
+    "AzureServiceName": "Azure Kubernetes Application Network",
+    "URL": ""
   },
   {
     "Command": "az appservice",
@@ -993,5 +998,15 @@
     "Command": "az migrate",
     "AzureServiceName": "Azure Migrate",
     "URL": "https://learn.microsoft.com/azure/migrate"
+  },
+  {
+    "Command": "az prototype",
+    "AzureServiceName": "Azure Prototype",
+    "URL": "https://github.com/Azure/az-prototype"
+  },
+  {
+    "Command": "az vi",
+    "AzureServiceName": "Azure Video Indexer",
+    "URL": "https://learn.microsoft.com/en-us/azure/azure-video-indexer"
   }
 ]

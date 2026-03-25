@@ -1028,6 +1028,7 @@ def aks_create(
     enable_application_load_balancer=False,
     enable_app_routing=False,
     app_routing_default_nginx_controller=None,
+    enable_default_domain=False,
     # nodepool paramerters
     nodepool_name="nodepool1",
     node_vm_size=None,
@@ -1075,6 +1076,8 @@ def aks_create(
     enable_image_cleaner=False,
     image_cleaner_interval_hours=None,
     enable_image_integrity=False,
+    enable_service_account_image_pull=False,
+    service_account_image_pull_default_managed_identity_id=None,
     cluster_snapshot_id=None,
     enable_apiserver_vnet_integration=False,
     apiserver_subnet_id=None,
@@ -1159,7 +1162,11 @@ def aks_create(
     enable_upstream_kubescheduler_user_configuration=False,
     # managed gateway installation
     enable_gateway_api=False,
-    enable_hosted_system=False
+    # app routing istio
+    enable_app_routing_istio=False,
+    enable_hosted_system=False,
+    # health monitor
+    enable_continuous_control_plane_and_addon_monitor=False,
 ):
     # DO NOT MOVE: get all the original parameters and save them as a dictionary
     raw_parameters = locals()
@@ -1316,6 +1323,9 @@ def aks_update(
     image_cleaner_interval_hours=None,
     enable_image_integrity=False,
     disable_image_integrity=False,
+    enable_service_account_image_pull=False,
+    disable_service_account_image_pull=False,
+    service_account_image_pull_default_managed_identity_id=None,
     enable_apiserver_vnet_integration=False,
     apiserver_subnet_id=None,
     enable_keda=False,
@@ -1400,9 +1410,15 @@ def aks_update(
     # managed gateway installation
     enable_gateway_api=False,
     disable_gateway_api=False,
+    # app routing istio
+    enable_app_routing_istio=False,
+    disable_app_routing_istio=False,
     # application load balancer
     enable_application_load_balancer=False,
     disable_application_load_balancer=False,
+    # health monitor
+    enable_continuous_control_plane_and_addon_monitor=False,
+    disable_continuous_control_plane_and_addon_monitor=False,
 ):
     # DO NOT MOVE: get all the original parameters and save them as a dictionary
     raw_parameters = locals()
@@ -1432,6 +1448,22 @@ def aks_show(cmd, client, resource_group_name, name, aks_custom_headers=None):
     headers = get_aks_custom_headers(aks_custom_headers)
     mc = client.get(resource_group_name, name, headers=headers)
     return _remove_nulls([mc])[0]
+
+
+def aks_delete(cmd, client, resource_group_name, name, no_wait=False,
+               if_match=None, if_none_match=None, ignore_pod_disruption_budget=None):
+    if if_none_match is not None:
+        logger.warning(
+            "The '--if-none-match' option is not applicable to delete operations and will be ignored."
+        )
+    return sdk_no_wait(
+        no_wait,
+        client.begin_delete,
+        resource_group_name,
+        name,
+        if_match=if_match,
+        ignore_pod_disruption_budget=ignore_pod_disruption_budget,
+    )
 
 
 # pylint: disable=unused-argument
@@ -1892,6 +1924,7 @@ def aks_agentpool_add(
     asg_ids=None,
     node_public_ip_tags=None,
     enable_artifact_streaming=False,
+    enable_managed_gpu=False,
     skip_gpu_driver_install=False,
     gpu_driver=None,
     driver_type=None,
@@ -1966,6 +1999,7 @@ def aks_agentpool_update(
     allowed_host_ports=None,
     asg_ids=None,
     enable_artifact_streaming=False,
+    enable_managed_gpu=False,
     os_sku=None,
     ssh_access=None,
     yes=False,
@@ -3424,6 +3458,35 @@ def aks_get_versions(cmd, client, location):    # pylint: disable=unused-argumen
     return client.list_kubernetes_versions(location)
 
 
+def aks_list_vm_skus(cmd, client, location, size=None, zone=None, show_all=None):  # pylint: disable=unused-argument
+    """Lists the VM SKUs accepted by AKS when creating node pools in a specified location.
+
+    AKS will perform a best effort approach to provision the requested VM SKUs, but availability is not guaranteed.
+
+    :param location: Azure region to query.
+    :param size: Optional partial VM size name filter (case-insensitive).
+    :param zone: When True, show only SKUs that support availability zones.
+    :param show_all: When True, include SKUs not available to the current subscription.
+    """
+    from azext_aks_preview.vm_skus_util import _aks_is_vm_sku_available
+
+    result = list(client.list(location))
+
+    if not show_all:
+        result = [sku for sku in result if _aks_is_vm_sku_available(sku, zone)]
+
+    if size:
+        result = [sku for sku in result if sku.name and size.lower() in sku.name.lower()]
+
+    if zone:
+        result = [
+            sku for sku in result
+            if sku.location_info and sku.location_info[0].zones
+        ]
+
+    return result
+
+
 def get_aks_custom_headers(aks_custom_headers=None):
     headers = {}
     if aks_custom_headers is not None:
@@ -4314,6 +4377,7 @@ def aks_approuting_enable(
         enable_kv=False,
         keyvault_id=None,
         nginx=None,
+        enable_default_domain=False
 ):
     return _aks_approuting_update(
         cmd,
@@ -4323,7 +4387,8 @@ def aks_approuting_enable(
         enable_app_routing=True,
         keyvault_id=keyvault_id,
         enable_kv=enable_kv,
-        nginx=nginx)
+        nginx=nginx,
+        enable_default_domain=enable_default_domain)
 
 
 def aks_approuting_disable(
@@ -4340,6 +4405,38 @@ def aks_approuting_disable(
         enable_app_routing=False)
 
 
+def aks_approuting_gateway_istio_enable(
+        cmd,
+        client,
+        resource_group_name,
+        name,
+        aks_custom_headers=None
+):
+    return _aks_approuting_update(
+        cmd,
+        client,
+        resource_group_name,
+        name,
+        enable_app_routing_istio=True,
+        aks_custom_headers=aks_custom_headers)
+
+
+def aks_approuting_gateway_istio_disable(
+        cmd,
+        client,
+        resource_group_name,
+        name,
+        aks_custom_headers=None
+):
+    return _aks_approuting_update(
+        cmd,
+        client,
+        resource_group_name,
+        name,
+        disable_app_routing_istio=True,
+        aks_custom_headers=aks_custom_headers)
+
+
 def aks_approuting_update(
         cmd,
         client,
@@ -4347,8 +4444,14 @@ def aks_approuting_update(
         name,
         keyvault_id=None,
         enable_kv=False,
-        nginx=None
+        nginx=None,
+        enable_default_domain=False,
+        disable_default_domain=False
 ):
+
+    if enable_default_domain and disable_default_domain:
+        raise CLIError("Conflicting flags. Cannot --enable-default-domain and --disable-default-domain at the same time.")
+
     return _aks_approuting_update(
         cmd,
         client,
@@ -4356,7 +4459,9 @@ def aks_approuting_update(
         name,
         keyvault_id=keyvault_id,
         enable_kv=enable_kv,
-        nginx=nginx)
+        nginx=nginx,
+        enable_default_domain=enable_default_domain,
+        disable_default_domain=disable_default_domain)
 
 
 def aks_approuting_zone_add(
@@ -4438,6 +4543,21 @@ def aks_approuting_zone_list(
     raise CLIError('App routing addon is not enabled')
 
 
+def aks_approuting_default_domain_show(
+        cmd,
+        client,
+        resource_group_name,
+        name
+):
+    mc = client.get(resource_group_name, name)
+
+    if mc.ingress_profile and mc.ingress_profile.web_app_routing and mc.ingress_profile.web_app_routing.enabled:
+        if mc.ingress_profile.web_app_routing.default_domain:
+            return mc.ingress_profile.web_app_routing.default_domain
+        raise CLIError('Default domain is not configured for this cluster')
+    raise CLIError('App routing addon is not enabled')
+
+
 # pylint: disable=unused-argument
 def _aks_applicationloadbalancer_update(
         cmd,
@@ -4482,7 +4602,12 @@ def _aks_approuting_update(
         update_dns_zone=None,
         dns_zone_resource_ids=None,
         attach_zones=None,
-        nginx=None
+        nginx=None,
+        enable_default_domain=None,
+        disable_default_domain=None,
+        enable_app_routing_istio=None,
+        disable_app_routing_istio=None,
+        aks_custom_headers=None,
 ):
     from azure.cli.command_modules.acs._consts import DecoratorEarlyExitException
     from azext_aks_preview.managed_cluster_decorator import AKSPreviewManagedClusterUpdateDecorator
@@ -4499,6 +4624,7 @@ def _aks_approuting_update(
     try:
         mc = aks_update_decorator.fetch_mc()
         mc = aks_update_decorator.update_app_routing_profile(mc)
+        mc = aks_update_decorator.update_ingress_profile_app_routing_istio(mc)
     except DecoratorEarlyExitException:
         return None
 
