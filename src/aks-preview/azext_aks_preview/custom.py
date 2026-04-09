@@ -955,6 +955,9 @@ def aks_create(
     load_balancer_backend_pool_type=None,
     nat_gateway_managed_outbound_ip_count=None,
     nat_gateway_idle_timeout=None,
+    nat_gateway_managed_outbound_ipv6_count=None,
+    nat_gateway_outbound_ip_ids=None,
+    nat_gateway_outbound_ip_prefix_ids=None,
     outbound_type=None,
     network_plugin=None,
     network_plugin_mode=None,
@@ -1223,6 +1226,9 @@ def aks_update(
     load_balancer_backend_pool_type=None,
     nat_gateway_managed_outbound_ip_count=None,
     nat_gateway_idle_timeout=None,
+    nat_gateway_managed_outbound_ipv6_count=None,
+    nat_gateway_outbound_ip_ids=None,
+    nat_gateway_outbound_ip_prefix_ids=None,
     kube_proxy_config=None,
     auto_upgrade_channel=None,
     node_os_upgrade_channel=None,
@@ -1928,6 +1934,7 @@ def aks_agentpool_add(
     skip_gpu_driver_install=False,
     gpu_driver=None,
     driver_type=None,
+    gpu_mig_strategy=None,
     ssh_access=CONST_SSH_ACCESS_LOCALUSER,
     # trusted launch
     enable_secure_boot=False,
@@ -1999,6 +2006,7 @@ def aks_agentpool_update(
     allowed_host_ports=None,
     asg_ids=None,
     enable_artifact_streaming=False,
+    disable_artifact_streaming=False,
     enable_managed_gpu=False,
     os_sku=None,
     ssh_access=None,
@@ -2016,6 +2024,7 @@ def aks_agentpool_update(
     localdns_config=None,
     node_vm_size=None,
     gpu_driver=None,
+    gpu_mig_strategy=None,
 ):
     # DO NOT MOVE: get all the original parameters and save them as a dictionary
     raw_parameters = locals()
@@ -2298,13 +2307,21 @@ def aks_agentpool_rollback(cmd,   # pylint: disable=unused-argument
                 "unmanaged",
             ]
 
-            if upgrade_channel_enabled or node_os_channel_enabled:
+            if upgrade_channel_enabled:
                 logger.warning(
                     "Auto-upgrade is enabled on cluster '%s' (upgradeChannel=%s, nodeOSUpgradeChannel=%s). "
                     "Rollback will not succeed until auto-upgrade is disabled. Please disable auto-upgrade to roll back the node pool.",
                     cluster_name,
                     upgrade_channel or "none",
                     node_os_upgrade_channel or "Unmanaged",
+                )
+            if node_os_channel_enabled:
+                logger.warning(
+                    "nodeOSUpgradeChannel is enabled on cluster '%s' (nodeOSUpgradeChannel=%s). "
+                    "The orchestrator version rollback will proceed, but the node image rollback "
+                    "will not succeed. Please disable nodeOSUpgradeChannel if you want to roll back the node image.",
+                    cluster_name,
+                    node_os_upgrade_channel,
                 )
         except Exception as ex:  # pylint: disable=broad-except
             logger.debug("Unable to retrieve auto-upgrade configuration before rollback: %s", ex)
